@@ -1,0 +1,622 @@
+-- =====================================================
+--  EDUCADE SCHOOL — Full Database Schema
+--  Compatible with MySQL 5.7+ / MariaDB 10.3+
+-- =====================================================
+
+CREATE DATABASE IF NOT EXISTS school_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE school_db;
+
+-- =====================================================
+-- ADMINS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admins (
+    id       INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO admins (id, username, password)
+VALUES (1, 'admin', 'admin123');
+
+-- =====================================================
+-- CLASSES TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS classes (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    class_name      VARCHAR(50)  NOT NULL,
+    total_seats     INT          NOT NULL DEFAULT 40,
+    available_seats INT          NOT NULL DEFAULT 40,
+    fees            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    status          ENUM('Open','Closed') DEFAULT 'Open'
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO classes (id, class_name, total_seats, available_seats, fees) VALUES
+(1,  'LKG',          40, 40,  25000),
+(2,  'UKG',          40, 40,  26000),
+(3,  '1st Standard', 50, 50,  30000),
+(4,  '2nd Standard', 50, 50,  30000),
+(5,  '3rd Standard', 50, 50,  32000),
+(6,  '4th Standard', 50, 50,  32000),
+(7,  '5th Standard', 50, 50,  35000),
+(8,  '6th Standard', 60, 60,  40000),
+(9,  '7th Standard', 60, 60,  42000),
+(10, '8th Standard', 60, 60,  45000),
+(11, '9th Standard', 70, 70,  50000),
+(12, '10th Standard',70, 70,  55000);
+
+-- =====================================================
+-- ADMISSIONS TABLE  (with new columns)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admissions (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    application_id   VARCHAR(50)  NOT NULL,
+    student_name     VARCHAR(100) NOT NULL,
+    father_name      VARCHAR(100) NOT NULL,
+    mother_name      VARCHAR(100) NOT NULL,
+    phone            VARCHAR(20)  NOT NULL,
+    email            VARCHAR(100),
+    dob              DATE,
+    gender           VARCHAR(20),
+    class_id         INT,
+    student_group    VARCHAR(60)  DEFAULT NULL,
+    address          TEXT,
+    photo            VARCHAR(255) DEFAULT NULL,
+    document_file    VARCHAR(255) DEFAULT NULL,
+    marksheet_file   VARCHAR(255) DEFAULT NULL ,
+    tc_file          VARCHAR(255) DEFAULT NULL ,
+    status           ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Migration: add new columns to existing table (safe — ignores if already exists)
+SET @s = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admissions' AND COLUMN_NAME='student_group') > 0,
+    'SELECT 1',
+    'ALTER TABLE admissions ADD COLUMN student_group VARCHAR(60) DEFAULT NULL AFTER class_id'
+));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admissions' AND COLUMN_NAME='marksheet_file') > 0,
+    'SELECT 1',
+    'ALTER TABLE admissions ADD COLUMN marksheet_file VARCHAR(255) DEFAULT NULL AFTER document_file'
+));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admissions' AND COLUMN_NAME='tc_file') > 0,
+    'SELECT 1',
+    'ALTER TABLE admissions ADD COLUMN tc_file VARCHAR(255) DEFAULT NULL AFTER marksheet_file'
+));
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- =====================================================
+-- STAFF TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS staff (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100),
+    designation   VARCHAR(100),
+    qualification VARCHAR(100),
+    experience    VARCHAR(50),
+    image         VARCHAR(255)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- FACILITIES TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS facilities (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(100),
+    description TEXT,
+    image       VARCHAR(255)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- EVENTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS events (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(255),
+    description TEXT,
+    image       VARCHAR(255),
+    event_date  DATE
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- GALLERY TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS gallery (
+    id    INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100),
+    image VARCHAR(255)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- NOTICES TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS notices (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(255),
+    description TEXT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- CONTACT MESSAGES TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100),
+    email      VARCHAR(100),
+    subject    VARCHAR(255),
+    message    TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+-- Run this once on your school_db database
+-- Adds Transfer Certificate columns if they don't already exist
+
+ALTER TABLE admissions
+  ADD COLUMN IF NOT EXISTS blood_group        VARCHAR(10)   DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS religion           VARCHAR(50)   DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS mother_tongue      VARCHAR(50)   DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS is_transfer        TINYINT(1)    DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS prev_playschool    VARCHAR(200)  DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS playschool_cert    VARCHAR(300)  DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS prev_school        VARCHAR(200)  DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS prev_school_address VARCHAR(300) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS last_class_studied VARCHAR(50)   DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS tc_number          VARCHAR(100)  DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS tc_date            DATE          DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS tc_file            VARCHAR(300)  DEFAULT NULL;
+
+
+
+
+traffic route sql:
+
+-- ============================================================
+-- TRAFFIC ROUTE MAP DATABASE SCHEMA
+-- Compatible with MySQL 5.7+ / MariaDB 10.3+
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS traffic_map CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE traffic_map;
+
+-- ============================================================
+-- TABLE: locations
+-- Points of interest, waypoints, intersections
+-- ============================================================
+CREATE TABLE IF NOT EXISTS locations (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(150)   NOT NULL,
+    category     ENUM('city','district','landmark','intersection','transit','hospital','school','commercial','residential','industrial') NOT NULL DEFAULT 'landmark',
+    lat          DECIMAL(10,7)  NOT NULL,
+    lng          DECIMAL(10,7)  NOT NULL,
+    address      VARCHAR(255),
+    description  TEXT,
+    is_active    TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_lat_lng (lat, lng),
+    INDEX idx_category (category),
+    INDEX idx_name (name)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: routes
+-- Named routes connecting two locations with optional waypoints
+-- ============================================================
+CREATE TABLE IF NOT EXISTS routes (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(200)   NOT NULL,
+    origin_id       INT UNSIGNED   NOT NULL,
+    destination_id  INT UNSIGNED   NOT NULL,
+    distance_km     DECIMAL(8,3)   NOT NULL DEFAULT 0,
+    duration_min    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    route_type      ENUM('highway','arterial','local','expressway','rural') NOT NULL DEFAULT 'arterial',
+    polyline        MEDIUMTEXT     COMMENT 'Encoded polyline string or JSON array of [lat,lng] pairs',
+    toll            TINYINT(1)     NOT NULL DEFAULT 0,
+    is_active       TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (origin_id)      REFERENCES locations(id) ON DELETE RESTRICT,
+    FOREIGN KEY (destination_id) REFERENCES locations(id) ON DELETE RESTRICT,
+    INDEX idx_origin (origin_id),
+    INDEX idx_destination (destination_id),
+    INDEX idx_route_type (route_type)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: traffic_segments
+-- Real-time or periodic traffic status per road segment
+-- ============================================================
+CREATE TABLE IF NOT EXISTS traffic_segments (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    route_id        INT UNSIGNED   NOT NULL,
+    segment_index   SMALLINT UNSIGNED NOT NULL DEFAULT 0  COMMENT 'Order within route',
+    start_lat       DECIMAL(10,7)  NOT NULL,
+    start_lng       DECIMAL(10,7)  NOT NULL,
+    end_lat         DECIMAL(10,7)  NOT NULL,
+    end_lng         DECIMAL(10,7)  NOT NULL,
+    speed_kmh       TINYINT UNSIGNED NOT NULL DEFAULT 60,
+    congestion      ENUM('free','light','moderate','heavy','standstill') NOT NULL DEFAULT 'free',
+    incident        TINYINT(1)     NOT NULL DEFAULT 0,
+    recorded_at     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE,
+    INDEX idx_route_segment (route_id, segment_index),
+    INDEX idx_congestion (congestion),
+    INDEX idx_recorded_at (recorded_at)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: incidents
+-- Accidents, roadworks, closures, events
+-- ============================================================
+CREATE TABLE IF NOT EXISTS incidents (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    route_id     INT UNSIGNED   NULL  COMMENT 'NULL = point incident not tied to a route',
+    type         ENUM('accident','roadwork','closure','flood','event','hazard','police') NOT NULL,
+    severity     ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+    title        VARCHAR(200)   NOT NULL,
+    description  TEXT,
+    lat          DECIMAL(10,7)  NOT NULL,
+    lng          DECIMAL(10,7)  NOT NULL,
+    reported_by  VARCHAR(100),
+    starts_at    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ends_at      DATETIME,
+    is_active    TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at   TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE SET NULL,
+    INDEX idx_type (type),
+    INDEX idx_severity (severity),
+    INDEX idx_active (is_active),
+    INDEX idx_lat_lng (lat, lng)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: searches
+-- User search history for analytics / autocomplete
+-- ============================================================
+CREATE TABLE IF NOT EXISTS searches (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id   VARCHAR(64),
+    origin       VARCHAR(200),
+    destination  VARCHAR(200),
+    mode         ENUM('driving','walking','transit','cycling') NOT NULL DEFAULT 'driving',
+    route_id     INT UNSIGNED   NULL,
+    searched_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE SET NULL,
+    INDEX idx_session (session_id),
+    INDEX idx_searched_at (searched_at)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: saved_routes
+-- User bookmarked / favourite routes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS saved_routes (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id   VARCHAR(64)    NOT NULL,
+    label        VARCHAR(100)   NOT NULL DEFAULT 'My Route',
+    route_id     INT UNSIGNED   NOT NULL,
+    notes        TEXT,
+    saved_at     TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE,
+    INDEX idx_session (session_id)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABLE: map_layers
+-- Toggle-able overlays (hospitals, schools, transit stops …)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS map_layers (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(100)   NOT NULL,
+    slug         VARCHAR(60)    NOT NULL UNIQUE,
+    icon         VARCHAR(10)    NOT NULL DEFAULT '📍',
+    color        VARCHAR(7)     NOT NULL DEFAULT '#3B82F6',
+    is_default   TINYINT(1)     NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- SEED DATA
+-- ============================================================
+
+-- Locations (Chennai, India — real-world coordinates)
+INSERT INTO locations (name, category, lat, lng, address, description) VALUES
+('Chennai Central Railway Station','transit',         13.0827408, 80.2752847, 'Park Town, Chennai 600003', 'Major railway terminus of Chennai'),
+('Chennai Airport',                'transit',         12.9941,    80.1709,    'Meenambakkam, Chennai 600027', 'Madurai Airport Terminal'),
+('Marina Beach',                   'landmark',        13.0500,    80.2824,    'Kamarajar Salai, Chennai', 'Longest urban beach in India'),
+('Anna Nagar',                     'district',        13.0850,    80.2101,    'Anna Nagar, Chennai 600040', 'Residential and commercial district'),
+('T. Nagar',                       'district',        13.0418,    80.2341,    'T. Nagar, Chennai 600017', 'Shopping and commercial hub'),
+('Adyar',                          'district',        13.0012,    80.2565,    'Adyar, Chennai 600020', 'Southern residential district'),
+('Guindy',                         'district',        13.0067,    80.2206,    'Guindy, Chennai 600032', 'Industrial and IT zone'),
+('Koyambedu',                      'transit',         13.0694,    80.1948,    'Koyambedu, Chennai 600107', 'Major bus terminus'),
+('Chennai Egmore Station',         'transit',         13.0780,    80.2624,    'Egmore, Chennai 600008', 'Important suburban railway station'),
+('Government General Hospital',    'hospital',        13.0736,    80.2609,    'Park Town, Chennai 600003', 'Oldest and largest public hospital'),
+('IIT Madras',                     'school',          13.0101,    80.2337,    'Sardar Patel Rd, Chennai 600036', 'Premier technical university'),
+('Express Avenue Mall',            'commercial',      13.0560,    80.2654,    'Whites Road, Chennai 600014', 'Premium shopping mall'),
+('Velachery',                      'district',        12.9815,    80.2209,    'Velachery, Chennai 600042', 'Suburban residential area'),
+('Tambaram',                       'transit',         12.9249,    80.1000,    'Tambaram, Chennai 600045', 'Southern suburb and railway junction'),
+('Porur',                          'district',        13.0344,    80.1573,    'Porur, Chennai 600116', 'Western suburb and IT corridor');
+
+-- Routes
+INSERT INTO routes (name, origin_id, destination_id, distance_km, duration_min, route_type, toll, polyline) VALUES
+('Central to Airport - NH Expressway', 1, 2, 22.4, 45, 'expressway', 1,
+ '[[13.0827,80.2752],[13.0650,80.2500],[13.0400,80.2200],[13.0200,80.1950],[12.9941,80.1709]]'),
+('Central to Marina Beach',           1, 3, 3.2,  10, 'arterial',   0,
+ '[[13.0827,80.2752],[13.0700,80.2790],[13.0600,80.2800],[13.0500,80.2824]]'),
+('T.Nagar to Anna Nagar',             5, 4, 8.5,  25, 'arterial',   0,
+ '[[13.0418,80.2341],[13.0500,80.2200],[13.0650,80.2150],[13.0850,80.2101]]'),
+('Koyambedu to Airport',              8, 2, 18.0, 35, 'highway',    0,
+ '[[13.0694,80.1948],[13.0400,80.1850],[13.0100,80.1750],[12.9941,80.1709]]'),
+('Adyar to IIT Madras',               6, 11, 5.8, 18, 'local',      0,
+ '[[13.0012,80.2565],[13.0050,80.2450],[13.0080,80.2380],[13.0101,80.2337]]'),
+('Guindy to Velachery',               7, 13, 6.2, 20, 'local',      0,
+ '[[13.0067,80.2206],[12.9950,80.2200],[12.9880,80.2200],[12.9815,80.2209]]'),
+('Central to Tambaram - GST Road',    1, 14, 30.5, 60, 'highway',   0,
+ '[[13.0827,80.2752],[13.0200,80.2500],[12.9800,80.2000],[12.9500,80.1500],[12.9249,80.1000]]'),
+('Anna Nagar to Porur',               4, 15, 12.0, 30, 'arterial',  0,
+ '[[13.0850,80.2101],[13.0700,80.1900],[13.0500,80.1700],[13.0344,80.1573]]');
+
+-- Traffic segments
+INSERT INTO traffic_segments (route_id, segment_index, start_lat, start_lng, end_lat, end_lng, speed_kmh, congestion, incident) VALUES
+(1, 0, 13.0827, 80.2752, 13.0650, 80.2500, 80, 'free',     0),
+(1, 1, 13.0650, 80.2500, 13.0400, 80.2200, 45, 'moderate', 0),
+(1, 2, 13.0400, 80.2200, 13.0200, 80.1950, 20, 'heavy',    1),
+(1, 3, 13.0200, 80.1950, 12.9941, 80.1709, 60, 'light',    0),
+(2, 0, 13.0827, 80.2752, 13.0700, 80.2790, 50, 'light',    0),
+(2, 1, 13.0700, 80.2790, 13.0500, 80.2824, 30, 'moderate', 0),
+(3, 0, 13.0418, 80.2341, 13.0500, 80.2200, 15, 'heavy',    0),
+(3, 1, 13.0500, 80.2200, 13.0850, 80.2101, 40, 'light',    0),
+(7, 0, 13.0827, 80.2752, 13.0200, 80.2500,  5, 'standstill',1),
+(7, 1, 13.0200, 80.2500, 12.9800, 80.2000, 55, 'free',     0);
+
+-- Incidents
+INSERT INTO incidents (route_id, type, severity, title, description, lat, lng, reported_by, starts_at, ends_at) VALUES
+(1, 'accident',  'high',     'Multi-vehicle collision on NH-16',
+ 'Three vehicles involved near Guindy junction. Right lane blocked.', 13.0400, 80.2200, 'Traffic Police', NOW() - INTERVAL 30 MINUTE, NOW() + INTERVAL 2 HOUR),
+(7, 'roadwork',  'medium',   'GST Road widening work',
+ 'Ongoing road widening project. Expect delays near Chromepet.', 12.9800, 80.2000, 'NHAI', NOW() - INTERVAL 3 DAY, NOW() + INTERVAL 30 DAY),
+(3, 'event',     'low',      'Heavy footfall near T.Nagar market',
+ 'Weekend shopping traffic causing slowdown on Usman Road.', 13.0418, 80.2341, 'City Corp', NOW(), NOW() + INTERVAL 6 HOUR),
+(NULL,'hazard',  'critical', 'Waterlogging at Koyambedu underpass',
+ 'Heavy rain caused waterlogging. Vehicles avoid underpass.', 13.0694, 80.1948, 'Public Report', NOW() - INTERVAL 1 HOUR, NOW() + INTERVAL 4 HOUR),
+(NULL,'police',  'low',      'Vehicle check post - Anna Nagar',
+ 'Routine police checking. Minor delays expected.', 13.0850, 80.2101, 'Traffic Dept', NOW(), NOW() + INTERVAL 3 HOUR);
+
+-- Map layers
+INSERT INTO map_layers (name, slug, icon, color, is_default) VALUES
+('Traffic Flow',      'traffic',   '🚦', '#EF4444', 1),
+('Incidents',         'incidents', '⚠️',  '#F97316', 1),
+('Transit Stops',     'transit',   '🚌', '#3B82F6', 0),
+('Hospitals',         'hospitals', '🏥', '#10B981', 0),
+('Schools & Colleges','schools',   '🎓', '#8B5CF6', 0),
+('Landmarks',         'landmarks', '📍', '#EC4899', 0);
+
+
+
+
+pharmacy sql:
+
+
+-- =============================================================================
+--  MediCare Pharmacy — Database Schema & Seed Data (v3)
+--  Import this file in phpMyAdmin (or via `mysql -u root pharmacy_db < database.sql`)
+--  before opening app.php
+--
+-- =============================================================================
+
+CREATE DATABASE IF NOT EXISTS pharmacy_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE pharmacy_db;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- USERS
+-- ─────────────────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS cart;
+DROP TABLE IF EXISTS medicines;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100)  NOT NULL,
+    email      VARCHAR(150)  NOT NULL UNIQUE,
+    phone      VARCHAR(20)   DEFAULT NULL,
+    password   VARCHAR(255)  NOT NULL,
+    address    TEXT          DEFAULT NULL,
+    role       ENUM('customer','admin') NOT NULL DEFAULT 'customer',
+    created_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Demo accounts:
+--   Admin    : admin@medicare.com    / admin123
+--   Customer : customer@medicare.com / customer123
+-- (passwords hashed with PHP password_hash / bcrypt)
+INSERT INTO users (name, email, phone, password, address, role) VALUES
+('Admin User',   'admin@medicare.com',    '9999999999', '$2y$10$5I3d3GVnuzKHvWf5Fn4WPOqRezjUsTUl9w0KlIsmD4iVHiBfqXp06', 'MediCare HQ, Anna Salai, Chennai - 600002', 'admin'),
+('Priya Sharma', 'customer@medicare.com', '9876543210', '$2y$10$D.MO/Zo2S3wbf5bYcAKRq.R1gSf8uSy6sKqWDNV6n3P2P5OjeDDp6', '12 Gandhi Street, T. Nagar, Chennai - 600017', 'customer');
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- CATEGORIES
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE categories (
+    id    INT AUTO_INCREMENT PRIMARY KEY,
+    name  VARCHAR(100) NOT NULL,
+    image VARCHAR(500) DEFAULT NULL
+) ENGINE=InnoDB;
+
+INSERT INTO categories (name, image) VALUES
+('Pain Relief',            'https://images.pexels.com/photos/9155926/pexels-photo-9155926.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Vitamins & Supplements',  'https://images.pexels.com/photos/13779107/pexels-photo-13779107.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Cold & Cough',            'https://images.pexels.com/photos/5858861/pexels-photo-5858861.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Digestive Health',        'https://images.pexels.com/photos/4047184/pexels-photo-4047184.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Diabetes Care',           'https://images.pexels.com/photos/5995306/pexels-photo-5995306.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Skin Care',               'https://images.pexels.com/photos/3997993/pexels-photo-3997993.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('Baby Care',               'https://images.pexels.com/photos/8909784/pexels-photo-8909784.jpeg?auto=compress&cs=tinysrgb&w=300'),
+('First Aid',               'https://images.pexels.com/photos/263337/pexels-photo-263337.jpeg?auto=compress&cs=tinysrgb&w=300');
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- MEDICINES
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE medicines (
+    id                     INT AUTO_INCREMENT PRIMARY KEY,
+    name                   VARCHAR(150)  NOT NULL,
+    category_id            INT           DEFAULT NULL,
+    description            TEXT          DEFAULT NULL,
+    manufacturer           VARCHAR(150)  DEFAULT NULL,
+    price                  DECIMAL(10,2) NOT NULL DEFAULT 0,
+    discount_percent       INT           NOT NULL DEFAULT 0,
+    stock                  INT           NOT NULL DEFAULT 0,
+    prescription_required  TINYINT(1)    NOT NULL DEFAULT 0,
+    image                  VARCHAR(500)  DEFAULT NULL,
+    rating                 DECIMAL(2,1)  NOT NULL DEFAULT 4.5,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ───────── PAIN RELIEF (category 1) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Paracetamol 650mg (Strip of 15)', 1, 'Fast-acting fever and pain relief tablet. Suitable for headaches, body ache and mild fever.', 'Cipla Ltd', 35.00, 10, 250, 0, 'https://images.pexels.com/photos/56612/pexels-photo-56612.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Ibuprofen 400mg (Strip of 10)', 1, 'Non-steroidal anti-inflammatory drug used for pain, inflammation and fever relief.', 'Sun Pharma', 42.00, 5, 180, 0, 'https://images.pexels.com/photos/9155926/pexels-photo-9155926.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4),
+('Aspirin 75mg (Strip of 14)', 1, 'Low-dose aspirin used for pain relief and cardiovascular protection as advised by physician.', 'Bayer', 28.50, 0, 12, 1, 'https://images.pexels.com/photos/51004/pexels-photo-51004.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Diclofenac Gel 30g', 1, 'Topical pain relief gel for muscle and joint pain, sprains and arthritis.', 'Novartis', 110.00, 15, 60, 0, 'https://images.pexels.com/photos/6663469/pexels-photo-6663469.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Naproxen 250mg (Strip of 10)', 1, 'Long-acting NSAID for relief of arthritis pain, muscle aches and menstrual cramps.', 'Zydus Cadila', 55.00, 0, 90, 1, 'https://images.pexels.com/photos/5995306/pexels-photo-5995306.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2),
+('Pain Relief Spray 60ml', 1, 'Fast-acting cooling spray for instant relief from muscular pain and sports injuries.', 'Volini', 195.00, 10, 75, 0, 'https://images.pexels.com/photos/14890557/pexels-photo-14890557.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4);
+
+
+-- ───────── VITAMINS & SUPPLEMENTS (category 2) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Vitamin D3 60K IU (4 Capsules)', 2, 'Weekly vitamin D3 supplement to support bone health and immunity.', 'Mankind Pharma', 99.00, 20, 300, 0, 'https://images.pexels.com/photos/13787566/pexels-photo-13787566.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7),
+('Multivitamin Tablets (30 Count)', 2, 'Daily multivitamin and multimineral supplement for overall wellness and energy.', 'HealthVit', 349.00, 12, 150, 0, 'https://images.pexels.com/photos/13779107/pexels-photo-13779107.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Vitamin C 500mg (60 Tablets)', 2, 'Immunity-boosting chewable vitamin C tablets with natural orange flavour.', 'HealthKart', 199.00, 10, 220, 0, 'https://images.pexels.com/photos/17820729/pexels-photo-17820729.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Omega-3 Fish Oil (60 Softgels)', 2, 'High-strength fish oil capsules rich in EPA and DHA for heart and brain health.', 'HealthVit', 599.00, 25, 90, 0, 'https://images.pexels.com/photos/15897781/pexels-photo-15897781.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4),
+('Calcium + Vitamin D3 Tablets', 2, 'Calcium citrate with vitamin D3 for stronger bones and teeth.', 'Zydus Wellness', 250.00, 8, 130, 0, 'https://images.pexels.com/photos/13787561/pexels-photo-13787561.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Zinc Tablets 50mg (60 Count)', 2, 'Zinc supplement to support immune function, skin health and wound healing.', 'HealthKart', 279.00, 10, 140, 0, 'https://images.pexels.com/photos/14845595/pexels-photo-14845595.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Biotin 10000mcg (60 Capsules)', 2, 'Biotin supplement that supports healthy hair, skin and nails.', 'HealthVit', 449.00, 15, 110, 0, 'https://images.pexels.com/photos/13787566/pexels-photo-13787566.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Iron + Folic Acid Tablets (30 Count)', 2, 'Iron and folic acid supplement to support healthy red blood cell production.', 'Mankind Pharma', 165.00, 5, 170, 0, 'https://images.pexels.com/photos/13779107/pexels-photo-13779107.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2);
+
+-- ───────── COLD & COUGH (category 3) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Cetirizine 10mg (Strip of 10)', 3, 'Antihistamine for relief from allergy symptoms such as sneezing, runny nose and itchy eyes.', 'Glenmark', 22.00, 0, 200, 0, 'https://images.pexels.com/photos/56612/pexels-photo-56612.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Cough Syrup 100ml', 3, 'Soothing syrup for dry and wet cough with honey and tulsi extracts.', 'Himalaya Wellness', 85.00, 10, 140, 0, 'https://images.pexels.com/photos/5858861/pexels-photo-5858861.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4),
+('Vapour Rub 50g', 3, 'Soothing chest rub for cold, cough and congestion relief, ideal for night-time use.', 'Procter & Gamble', 95.00, 5, 175, 0, 'https://images.pexels.com/photos/7441754/pexels-photo-7441754.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Levocetirizine 5mg (Strip of 10)', 3, 'Second-generation antihistamine for allergic rhinitis and chronic urticaria.', "Dr. Reddy's", 30.00, 0, 8, 1, 'https://images.pexels.com/photos/3683040/pexels-photo-3683040.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2),
+('Throat Lozenges (Pack of 24)', 3, 'Menthol and honey lozenges for fast relief from sore throat and cough.', 'Strepsils', 75.00, 5, 220, 0, 'https://images.pexels.com/photos/9742748/pexels-photo-9742748.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Nasal Decongestant Drops 10ml', 3, 'Fast-acting nasal drops to relieve blocked nose due to cold and sinusitis.', 'Sun Pharma', 65.00, 0, 100, 0, 'https://images.pexels.com/photos/4021773/pexels-photo-4021773.jpeg?auto=compress&cs=tinysrgb&w=400', 4.1),
+('Steam Vaporizer Inhaler', 3, 'Personal steam inhaler for relief from nasal congestion, sinus pressure and cold symptoms.', 'Omron', 799.00, 10, 40, 0, 'https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3);
+
+-- ───────── DIGESTIVE HEALTH (category 4) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Antacid Tablets (Strip of 10)', 4, 'Quick relief from acidity, heartburn and indigestion.', 'Abbott', 32.00, 0, 240, 0, 'https://images.pexels.com/photos/56612/pexels-photo-56612.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('ORS Rehydration Sachets (10 Pack)', 4, 'Oral rehydration salts to restore electrolyte balance during dehydration.', 'FDC Limited', 60.00, 0, 300, 0, 'https://images.pexels.com/photos/5722880/pexels-photo-5722880.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7),
+('Probiotic Capsules (30 Count)', 4, 'Daily probiotic supplement to support gut health and digestion.', 'Sanzyme', 449.00, 18, 70, 0, 'https://images.pexels.com/photos/13787561/pexels-photo-13787561.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Laxative Syrup 200ml', 4, 'Gentle, non-habit-forming laxative syrup for relief from constipation.', 'Cipla Ltd', 135.00, 5, 95, 0, 'https://images.pexels.com/photos/5858861/pexels-photo-5858861.jpeg?auto=compress&cs=tinysrgb&w=400', 4.1),
+('Digestive Enzyme Tablets (Strip of 10)', 4, 'Helps relieve bloating, gas and indigestion after meals.', 'Abbott', 48.00, 0, 160, 0, 'https://images.pexels.com/photos/3683040/pexels-photo-3683040.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2),
+('Anti-Diarrheal Tablets (Strip of 6)', 4, 'Provides quick relief from acute diarrhea and associated discomfort.', 'Johnson & Johnson', 38.00, 0, 130, 0, 'https://images.pexels.com/photos/51004/pexels-photo-51004.jpeg?auto=compress&cs=tinysrgb&w=400', 4.0);
+
+-- ───────── DIABETES CARE (category 5) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Glucometer Test Strips (50 Count)', 5, 'Blood glucose test strips compatible with most standard glucometers.', 'Accu-Chek', 699.00, 10, 65, 0, 'https://images.pexels.com/photos/8669879/pexels-photo-8669879.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4),
+('Metformin 500mg (Strip of 15)', 5, 'Prescription oral medication to control blood sugar levels in type-2 diabetes.', 'Sun Pharma', 45.00, 0, 5, 1, 'https://images.pexels.com/photos/56612/pexels-photo-56612.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Insulin Syringes (Pack of 10)', 5, 'Single-use sterile insulin syringes with ultra-fine needles for comfortable injections.', 'BD Medical', 180.00, 0, 110, 1, 'https://images.pexels.com/photos/6823562/pexels-photo-6823562.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Digital Glucometer Kit', 5, 'Complete blood glucose monitoring kit with lancets and 10 test strips included.', 'Accu-Chek', 1199.00, 15, 35, 0, 'https://images.pexels.com/photos/33200678/pexels-photo-33200678.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Sugar-Free Sweetener Tablets (100 Count)', 5, 'Zero-calorie sugar substitute tablets safe for diabetics, made with sucralose.', 'Sugar Free Natura', 145.00, 10, 200, 0, 'https://images.pexels.com/photos/13787561/pexels-photo-13787561.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2);
+
+-- ───────── SKIN CARE (category 6) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Sunscreen SPF 50 (50ml)', 6, 'Broad-spectrum sunscreen lotion offering long-lasting protection from UVA/UVB rays.', 'Neutrogena', 425.00, 15, 140, 0, 'https://images.pexels.com/photos/27393233/pexels-photo-27393233.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Moisturizing Lotion 200ml', 6, 'Daily hydrating lotion for dry and sensitive skin, dermatologist tested.', 'Cetaphil', 599.00, 10, 100, 0, 'https://images.pexels.com/photos/1029896/pexels-photo-1029896.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7),
+('Anti-Acne Face Wash 100ml', 6, 'Salicylic acid based face wash for clearer skin and acne control.', 'Himalaya Wellness', 199.00, 5, 160, 0, 'https://images.pexels.com/photos/6663469/pexels-photo-6663469.jpeg?auto=compress&cs=tinysrgb&w=400', 4.2),
+('Antifungal Cream 20g', 6, 'Effective topical treatment for fungal skin infections like ringworm and athlete\'s foot.', 'GSK', 110.00, 0, 130, 0, 'https://images.pexels.com/photos/8131589/pexels-photo-8131589.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Calamine Lotion 100ml', 6, 'Soothing lotion for relief from itching, rashes, insect bites and sunburn.', 'Himalaya Wellness', 95.00, 0, 145, 0, 'https://images.pexels.com/photos/17743379/pexels-photo-17743379.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Aloe Vera Gel 150g', 6, 'Pure aloe vera gel for soothing, hydrating and healing irritated skin.', 'Patanjali', 99.00, 10, 180, 0, 'https://images.pexels.com/photos/14890557/pexels-photo-14890557.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Petroleum Jelly 100g', 6, 'Multipurpose moisturizing jelly for dry skin, lips and minor skin irritations.', 'Vaseline', 85.00, 0, 210, 0, 'https://images.pexels.com/photos/13800736/pexels-photo-13800736.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6);
+
+-- ───────── BABY CARE (category 7) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('Baby Diapers (Size M, 44 Count)', 7, 'Ultra-soft, leak-proof diapers with 12-hour absorption for babies 6-11kg.', 'Pampers', 749.00, 20, 85, 0, 'https://images.pexels.com/photos/8909784/pexels-photo-8909784.jpeg?auto=compress&cs=tinysrgb&w=400', 4.8),
+('Baby Massage Oil 200ml', 7, 'Gentle, dermatologically tested massage oil for newborn and infant skin care.', "Johnson's Baby", 235.00, 10, 120, 0, 'https://images.pexels.com/photos/1029896/pexels-photo-1029896.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Baby Diaper Rash Cream 50g', 7, 'Zinc oxide based barrier cream to soothe and prevent diaper rash.', 'Himalaya Wellness', 165.00, 0, 95, 0, 'https://images.pexels.com/photos/8131589/pexels-photo-8131589.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Baby Lotion 200ml', 7, 'Mild, hypoallergenic moisturizing lotion specially formulated for delicate baby skin.', "Johnson's Baby", 210.00, 5, 130, 0, 'https://images.pexels.com/photos/6663469/pexels-photo-6663469.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7),
+('Baby Wipes (Pack of 80)', 7, 'Soft, alcohol-free wet wipes for gentle cleaning of baby skin.', 'Pampers', 199.00, 10, 175, 0, 'https://images.pexels.com/photos/8909784/pexels-photo-8909784.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Baby Gripe Water 130ml', 7, 'Traditional formula to relieve colic, gas and hiccups in infants.', "Woodward's", 95.00, 0, 150, 0, 'https://images.pexels.com/photos/5858861/pexels-photo-5858861.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3);
+
+-- ───────── FIRST AID (category 8) ─────────
+INSERT INTO medicines (name, category_id, description, manufacturer, price, discount_percent, stock, prescription_required, image, rating) VALUES
+('First Aid Kit (Complete Box)', 8, 'Comprehensive home first-aid kit with bandages, antiseptic, gauze and essentials.', 'Reliance Health', 599.00, 15, 55, 0, 'https://images.pexels.com/photos/5146534/pexels-photo-5146534.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7),
+('Antiseptic Liquid 100ml', 8, 'Multipurpose antiseptic liquid for cuts, wounds and surface disinfection.', 'Reckitt Benckiser', 65.00, 0, 200, 0, 'https://images.pexels.com/photos/6706901/pexels-photo-6706901.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Adhesive Bandages (Pack of 100)', 8, 'Waterproof, breathable adhesive bandages for minor cuts and wounds.', '3M', 120.00, 5, 0, 0, 'https://images.pexels.com/photos/7722865/pexels-photo-7722865.jpeg?auto=compress&cs=tinysrgb&w=400', 4.4),
+('Digital Thermometer', 8, 'Fast and accurate digital thermometer with fever alarm and memory recall.', 'Omron', 299.00, 10, 75, 0, 'https://images.pexels.com/photos/7722675/pexels-photo-7722675.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Cotton Roll 100g', 8, 'Absorbent cotton roll for wound dressing and general medical use.', 'Johnson & Johnson', 55.00, 0, 230, 0, 'https://images.pexels.com/photos/6129902/pexels-photo-6129902.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Crepe Bandage 4inch (Pack of 2)', 8, 'Elastic crepe bandage for sprains, strains and joint support.', '3M', 145.00, 5, 110, 0, 'https://images.pexels.com/photos/7722865/pexels-photo-7722865.jpeg?auto=compress&cs=tinysrgb&w=400', 4.3),
+('Hand Sanitizer 500ml', 8, 'Alcohol-based hand sanitizer that kills 99.9%% of germs, with moisturizing aloe vera.', 'Dettol', 175.00, 10, 240, 0, 'https://images.pexels.com/photos/8266821/pexels-photo-8266821.jpeg?auto=compress&cs=tinysrgb&w=400', 4.6),
+('Pulse Oximeter', 8, 'Fingertip pulse oximeter for measuring blood oxygen saturation (SpO2) and pulse rate.', 'Dr. Trust', 999.00, 20, 45, 0, 'https://images.pexels.com/photos/7580256/pexels-photo-7580256.jpeg?auto=compress&cs=tinysrgb&w=400', 4.5),
+('Blood Pressure Monitor (Digital)', 8, 'Automatic upper-arm blood pressure monitor with large display and memory storage.', 'Omron', 1899.00, 15, 30, 0, 'https://images.pexels.com/photos/8088865/pexels-photo-8088865.jpeg?auto=compress&cs=tinysrgb&w=400', 4.7);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- CART  (one row per user+medicine; quantity increments on duplicate add)
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE cart (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL,
+    medicine_id INT NOT NULL,
+    quantity    INT NOT NULL DEFAULT 1,
+    added_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_user_medicine (user_id, medicine_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (medicine_id) REFERENCES medicines(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- ORDERS & ORDER ITEMS
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE orders (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    user_id           INT NOT NULL,
+    total_amount      DECIMAL(10,2) NOT NULL DEFAULT 0,
+    shipping_address  TEXT NOT NULL,
+    status            ENUM('Pending','Processing','Shipped','Delivered','Cancelled') NOT NULL DEFAULT 'Pending',
+    order_date        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE order_items (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    order_id    INT NOT NULL,
+    medicine_id INT NOT NULL,
+    quantity    INT NOT NULL DEFAULT 1,
+    price       DECIMAL(10,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (medicine_id) REFERENCES medicines(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Sample orders for the demo customer (id = 2)
+INSERT INTO orders (user_id, total_amount, shipping_address, status, order_date) VALUES
+(2, 191.50, '12 Gandhi Street, T. Nagar, Chennai - 600017', 'Delivered', NOW() - INTERVAL 5 DAY),
+(2, 154.50, '12 Gandhi Street, T. Nagar, Chennai - 600017', 'Shipped', NOW() - INTERVAL 1 DAY);
+
+INSERT INTO order_items (order_id, medicine_id, quantity, price) VALUES
+(1, 1, 2, 31.50),
+(1, 11, 1, 22.00),
+(1, 19, 2, 32.00),
+(2, 7, 1, 79.20),
+(2, 9, 1, 179.10),
+(2, 20, 1, 32.00);
+
+-- =============================================================================
+-- DONE. Demo credentials:
+--   Admin    -> admin@medicare.com    / admin123
+--   Customer -> customer@medicare.com / customer123
+--
+-- Catalog: 53 medicines across 8 categories
+--   1 Pain Relief (6)            2 Vitamins & Supplements (8)
+--   3 Cold & Cough (7)           4 Digestive Health (6)
+--   5 Diabetes Care (5)          6 Skin Care (7)
+--   7 Baby Care (6)              8 First Aid (9)
+
